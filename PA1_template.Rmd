@@ -1,0 +1,106 @@
+---
+title: "ACTIVITY DATA ANALYSIS"
+author: "Doc OmSa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r echo=TRUE}
+```
+
+```{r}
+
+library(tidyverse)
+```
+
+1. Bring in data
+```{r}
+act_data <- read.csv("E:/JOHN HOPKIN'S SPECIALIZATION IN DATA SCIENCE COURSE/DATASETS for practice/ACTIVITY DATA WEEK 2 COURSE PTOJECT REP RESEARCH/activity.csv")
+```
+
+2. Calculate total number of steps, plot histogram and calculate mean
+and median number of steps
+```{r}
+# Calculate the total number of steps per day
+total_steps <- aggregate(steps ~ date, act_data, sum)
+
+# Plot histogram
+ggplot(total_steps, aes(x = steps)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Total Steps per Day", x = "Total Steps", y = "Frequency")
+
+# Calculate mean and median steps per day
+mean_steps <- aggregate(steps ~ date, act_data, mean)
+median_steps <- aggregate(steps ~ date, act_data, median)
+
+# Print mean and median
+mean_steps
+median_steps
+```
+
+3. Time series plot of the average number of steps taken
+AND
+The 5-minute interval that, on average, contains the maximum number of steps
+
+```{r}
+# Calculate average steps per interval
+avg_steps <- aggregate(steps ~ interval, act_data, mean)
+print(avg_steps)
+
+# Plot time series
+ggplot(avg_steps, aes(x = interval, y = steps)) +
+  geom_line(color = "blue") +
+  labs(title = "Average Number of Steps per Interval", x = "Interval", y = "Average Steps")
+
+# Find the interval with the maximum average steps
+max_interval <- avg_steps[which.max(avg_steps$steps), "interval"]
+max_interval
+```
+4. Impute missing data ( i am taking the mean of the available steps data for imputation)
+
+```{r}
+
+# Strategy for imputing missing data
+imputed_data <- act_data
+imputed_data$steps[is.na(imputed_data$steps)] <- mean(act_data$steps, na.rm = TRUE)
+
+# Show imputed data
+head(imputed_data)
+
+# Calculate the total number of steps per day (after imputation)
+total_steps_imputed <- aggregate(steps ~ date, imputed_data, sum)
+
+# Plot histogram
+ggplot(total_steps_imputed, aes(x = steps)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Total Steps per Day (After Imputation)", x = "Total Steps", y = "Frequency")
+```
+
+5. Manage weekdays and weekends
+
+```{r}
+# Convert the date variable to a proper Date object
+act_data$date <- as.Date(act_data$date)
+ 
+# Create a new variable to indicate weekdays and weekends
+act_data$day_type <- ifelse(weekdays(act_data$date) %in%  c("Saturday", "Sunday"), "Weekend", "Weekday")
+ 
+# Specify the 5-minute interval
+interval_breaks <- seq(0, 2355, by = 5)
+
+# Convert interval to numeric
+act_data$interval <- as.numeric(act_data$interval)
+
+# Cut the interval variable into 5-minute intervals and convert to factor
+act_data$interval <- cut(act_data$interval, breaks = interval_breaks)
+
+# Calculate average steps per interval and day type
+avg_steps_day_type <- aggregate(steps ~ interval + day_type, act_data, mean)
+
+# Plot panel plot
+# Plot panel plot
+ggplot(avg_steps_day_type, aes(x = interval, y = steps, group = day_type)) +
+  geom_line(color = "blue") +
+  facet_wrap(~ day_type, nrow = 2) +
+  labs(title = "Average Number of Steps per Interval (Weekdays vs. Weekends)", x = "Interval", y = "Average Steps")
+```
